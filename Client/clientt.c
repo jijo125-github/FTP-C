@@ -150,6 +150,11 @@ int main(int argc, char *argv[])
 			bzero(buffer, sizeof(buffer));
 			// }
 		}
+		else if (strncmp(buf, "RMD", 3) == 0)
+		{
+			printf("Data Returned: \t%s\n", buffer);
+			bzero(buffer, sizeof(buffer));
+		}
 
 
 

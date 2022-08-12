@@ -209,6 +209,31 @@ int main(int argc, char *argv[])
                         send(newSocket,mssg,strlen(mssg),0);
                     }
 
+                } // handle RMD function
+                else if (strncmp(buffer,"RMD",3) == 0)
+                {
+                    printf("inside RMD func");
+                    int k = 0;
+                    char ans[1024];
+                    for (int i = 4; i < strlen(buffer); i++)
+                    {
+                        ans[k] = buffer[i];
+                        // printf("Each character: %c\n",ans[k]);
+                        k++;
+                    }
+                    strtok(ans, "\n");
+                    int status = rmdir(ans);
+                    if (status == 0){
+                        // successfully deleted
+                        char mssg[256] = "Directory Successfully deleted ";
+                        send(newSocket,mssg,strlen(mssg),0);
+                    }
+                    else if (status == 1){
+                        // not delted somehow
+                        char mssg[256] = "Not successful in deleting ";
+                        send(newSocket,mssg,strlen(mssg),0);
+                    }
+
                 }
                 // handle present working directory logic
                 else if (strncmp(buffer, "PWD ", 4) == 0 || strncmp(buffer, "pwd ", 4) == 0 ||
