@@ -4,11 +4,13 @@ int newSocket;
 int count = 0;
 char file_name[100]; // to store contents from client in server
 char pwdbuf[256];
+char list[1024];
 
 void split(char *pathaname);
 //int store_file(char *pathname);
 int changeDirectory(char *directory);
 int show_currentDirectory();
+int ListFilesInDirectory();
 
 int main(int argc, char *argv[])
 {
@@ -26,6 +28,7 @@ int main(int argc, char *argv[])
 
     int sockfd;
     char buffer[MAXLINE];
+    char buflist[MAXLINE];
     pid_t childpid;
 
     /*================================================SOCKET-CREATION================================================*/
@@ -165,6 +168,18 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
+                // handle list
+                else if (strncmp(buffer, "LIST", 4) == 0)
+                {
+                    printf("inside the list func");
+                    int status = ListFilesInDirectory();
+                    if (status == 0)
+                    {
+                        strcpy(buflist,list);
+                        send(newSocket,buflist,strlen(buflist),0); // send the listed files to client side
+                    }
+
+                }
                 // handle present working directory logic
                 else if (strncmp(buffer, "PWD ", 4) == 0 || strncmp(buffer, "pwd ", 4) == 0 ||
                          strncmp(buffer, "PWD\t", 4) == 0 || strncmp(buffer, "pwd\t", 4) == 0 ||
@@ -201,39 +216,39 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void split(char *pathname)
-{
+// void split(char *pathname)
+// {
 
-    /*
-        Objective:      To extract the filename from the pathname
-        Return Type:    void(null)
-        Parameter:
-            char *pathname: specifes pathname from which filename to be extracted.
-        Approach:       perform using string traversal and delimiting it by '/'
-    */
+//     /*
+//         Objective:      To extract the filename from the pathname
+//         Return Type:    void(null)
+//         Parameter:
+//             char *pathname: specifes pathname from which filename to be extracted.
+//         Approach:       perform using string traversal and delimiting it by '/'
+//     */
 
-    char splitStrings[10][10];
-    int i, j, cnt;
+//     char splitStrings[10][10];
+//     int i, j, cnt;
 
-    j = 0;
-    cnt = 0;
-    for (i = 0; i <= (strlen(pathname)); i++)
-    {
-        if (pathname[i] == '/' || pathname[i] == '\0')
-        {
-            splitStrings[cnt][j] = '\0';
-            cnt++; // for next word
-            j = 0; // for next word, init index to 0
-        }
-        else
-        {
-            splitStrings[cnt][j] = pathname[i];
-            j++;
-        }
-    }
-    strcpy(file_name, splitStrings[cnt - 1]);
-    file_name[strlen(file_name)] = '\0';
-}
+//     j = 0;
+//     cnt = 0;
+//     for (i = 0; i <= (strlen(pathname)); i++)
+//     {
+//         if (pathname[i] == '/' || pathname[i] == '\0')
+//         {
+//             splitStrings[cnt][j] = '\0';
+//             cnt++; // for next word
+//             j = 0; // for next word, init index to 0
+//         }
+//         else
+//         {
+//             splitStrings[cnt][j] = pathname[i];
+//             j++;
+//         }
+//     }
+//     strcpy(file_name, splitStrings[cnt - 1]);
+//     file_name[strlen(file_name)] = '\0';
+// }
 
 // int store_file(char *pathname)
 // {
@@ -327,4 +342,40 @@ int show_currentDirectory()
     strtok(pwdbuf, "\n");
     printf("\nCurrent Directory >> %s", pwdbuf);
     return 343;
+}
+
+// logic to handle the listing of files in a directory
+int ListFilesInDirectory() 
+{
+
+        DIR *dp;
+        struct dirent *DIRP;
+        *list = '\0';
+
+        // if (strlen(arg) > 1) {
+        //     strtok(arg, "\n");
+        //     if ((directory = opendir(arg)) == NULL)
+        //         return 346;
+        // }
+        // else {
+        //     if((directory = opendir("./")) == NULL) {
+        //         return 346;
+        //     }
+        // }
+        if((dp = opendir("./")) == NULL) {
+                return 346;
+            }
+	
+	    while((DIRP = readdir(dp)) != NULL) {
+            if((strcmp(DIRP->d_name, ".") != 0) && (strcmp(DIRP->d_name, "..") != 0)) {
+                strcat(list, "--> ");
+                strcat(list, DIRP->d_name);
+                strcat(list,"\n");
+            
+            }
+        }
+
+        closedir(dp);
+    
+    return 0;
 }

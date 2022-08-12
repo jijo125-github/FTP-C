@@ -20,3 +20,4 @@
 
 extern int newSocket;
 extern char pwdbuf[256];
+extern char list[1024];
