@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 		send(clientSocket, buffer, strlen(buffer), 0); // pass input commands to client
 
 		strcpy(buf, buffer);
-		printf("\n display the buf: %s\n", buf);
+		//printf("\n display the buf: %s\n", buf);
 		buf[strlen(buf)] = '\0';
 		bzero(buffer, sizeof(buffer));
 
@@ -72,24 +72,27 @@ int main(int argc, char *argv[])
 		}
 
 		// handle USER logic
-		// printf("\n display the buf2: %s\n", buf);
-		if (strcmp(buf, "USER") == 0)
+		if (strncmp(buf, "USER", 4) == 0)
 		{
-			printf("User logged in\n");
+
+			printf("Data Returned: \t%s\n", buffer);
+			bzero(buffer, sizeof(buffer));
 		}
 
-		// handle STOR logic -- upload file to server
-		// if (strncmp(buf, "STOR", 4) == 0)
-		// {
-		// 	printf("STOR command used\n");
-		// 	/*===============================================STORE-COMMAND===============================================*/
+		// handle QUIT logic
+		else if (strncmp(buf, "QUIT", 4) == 0)
+		{
+			printf("Data Returned: \t%s\n", buffer);
+			bzero(buffer, sizeof(buffer));
+			// bzero(buffer, sizeof(buffer));
+			close(clientSocket);
+			// printf("[-]Disconnected from server.\n");
+			exit(1);
+			// break;
+		}
 
-		// 	if (strncmp(buf, "STOR", 4) == 0 || strncmp(buf, "stor", 4) == 0)
-		// 		store_command(); // will work only when STOR command is called.
-
-		// 	/*===========================================================================================================*/
-		// }
-		if (strncmp(buf, "PWD", 3) == 0)
+		// handle PWD
+		else if (strncmp(buf, "PWD", 3) == 0)
 		{
 			// receive the returned buffer status from server
 			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
@@ -196,30 +199,6 @@ int main(int argc, char *argv[])
 			bzero(buffer, sizeof(buffer));
 			retr_result(download_file);
 		}
-
-
-
-
-		/*if(strcmp(buffer,"cdup")==0)
-		{
-		  change_to_parent();
-		}*/
-
-		if (strcmp(buf, "QUIT") == 0)
-		{
-			close(clientSocket);
-			printf("[-]Disconnected from server.\n");
-			exit(1);
-		}
-
-		// handle STOR command
-		// if(strcmp())
-
-		// if(recv(clientSocket, buffer, 1024, 0) < 0){
-		// 	printf("[-]Error in receiving data.\n");
-		// }else{
-		// 	printf("Server: \t%s\n", buffer);
-		// }
 	}
 	return 0;
 }
@@ -240,7 +219,7 @@ void send_file(FILE *fp, int clientSocket)
 	}
 }
 
- // function to store the contents in a file 
+// function to store the contents in a file
 void store_file(char *dest, char file[1024])
 {
 
@@ -254,10 +233,10 @@ void retr_result(char *filename)
 {
 	/*Store File at client-site.*/
 	char res[1024];
-	//bzero(buffer, sizeof(buffer));
+	// bzero(buffer, sizeof(buffer));
 
 	recv(clientSocket, buffer, MAXLINE, 0);
-	printf("\nContent received from server file: %s\n",buffer);
+	printf("\nContent received from server file: %s\n", buffer);
 
 	strcpy(res, buffer);
 	bzero(buffer, sizeof(buffer));
@@ -268,13 +247,12 @@ void retr_result(char *filename)
 	getcwd(buf, 256);
 	strcat(buf, "/");
 	strcat(buf, filename);
-	//bzero(buffer, sizeof(buffer));
+	// bzero(buffer, sizeof(buffer));
 	store_file(buf, res);
 
 	printf("File-Name: %s.\n", filename);
 	printf("File-Size: %ld bytes.\n", strlen(res));
 	printf("Received Successfully.\n");
-	printf("FILE OK...Transfer Completed.");
+	printf("FILE OK...Download Completed.");
 	printf("\n");
 }
-

@@ -87,16 +87,27 @@ int main(int argc, char *argv[])
 
             while (1)
             {
-                bzero(buffer, sizeof(buffer));
+                //bzero(buffer, sizeof(buffer));
                 recv(newSocket, buffer, 1024, 0); // receiving input commands from client
 
-                // handle QUIT
-                if (strcmp(buffer, "QUIT") == 0)
+                // handle QUIT command
+                if (strncmp(buffer, "QUIT", 4) == 0)
                 {
-                    printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+                    // printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+                    printf("temp disconnect\n");
+                    char mssg[256] = "Server disconnected";
+                    send(newSocket, mssg, strlen(mssg), 0);
                     break;
                 }
-
+                // handle USER command
+                else if (strncmp(buffer, "USER", 4) == 0)
+                {
+                    // char temp[10];
+                    // send(newSocket, temp, 10, 0);
+                    printf(">> Client - %s has Successfully Logged In.\n");
+                    char msg[256] = "User has successfully logged in";
+                    send(newSocket, msg, strlen(msg), 0); // send the user logged in message to client
+                }
                 // handle change directory logic
                 else if (strncmp(buffer, "CWD", 3) == 0)
                 {
