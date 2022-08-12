@@ -2,7 +2,8 @@
 
 int newSocket;
 int count = 0;
-char file_name[100]; // to store contents from client in server
+char file[1024]; // to store contents from client in server
+char file_name[100]; 
 char pwdbuf[256];
 char list[1024];
 struct stat st = {0};
@@ -13,6 +14,8 @@ int changeDirectory(char *directory);
 int show_currentDirectory();
 int ListFilesInDirectory();
 int makeDirectory(char *directory);
+int write_file(char *filename, int sockfd);
+int retr_file(char *filename);
 
 int main(int argc, char *argv[])
 {
@@ -93,24 +96,6 @@ int main(int argc, char *argv[])
                     printf("Disconnected from %s:%d\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
                     break;
                 }
-
-                // // handle STOR command
-                // else if (strncmp(buffer, "STOR ", 5) == 0)
-                // {
-                //     // STOR command received from client end
-                //     printf("Display the stor byffer value: %s", buffer);
-                //     int k = 0;
-                //     char ans[1024];
-                //     for (int i = 5; i < strlen(buffer); i++)
-                //     {
-                //         ans[k] = buffer[i];
-                //         // printf("Each character: %c\n",ans[k]);
-                //         k++;
-                //     }
-                //     strtok(ans, "\n");
-                //     printf("\nfilename is %s\n", ans);
-                //     int status = store_file(ans); // passing the filename as an argument
-                // }
 
                 // handle change directory logic
                 else if (strncmp(buffer, "CWD", 3) == 0)
@@ -256,6 +241,69 @@ int main(int argc, char *argv[])
                             // return buf;
                         }
                 }
+                // handle STOR command
+                else if (strncmp(buffer, "STOR ", 5) == 0)
+                {
+                    // printf("Display the stor byffer value: %s", buffer);
+                    printf("Inside the STOR func");
+                    int k = 0;
+                    char ans[1024];
+                    for (int i = 5; i < strlen(buffer); i++)
+                    {
+                        ans[k] = buffer[i];
+                        // printf("Each character: %c\n",ans[k]);
+                        k++;
+                    }
+                    strtok(ans, "\n");
+                    printf("\nfilename to be stored from client to server: %s\n", ans);
+                    char *answer = ans;
+                    // sleep(2);
+                    send(newSocket, answer, strlen(answer), 0); // send the filename to client
+                    // sleep(2);
+
+                    int status = write_file(answer, newSocket); // passing the filename as an argument
+                    // if write file was successful, send message to client
+                    if (status == 0)
+                    {
+                        char mssg[256] = "File uploaded in Server sucessfully";
+                        send(newSocket, mssg, strlen(mssg), 0);
+                    }
+                    else if (status == -1)
+                    {
+                        char mssg[256] = "Some Error happened in receiving socket";
+                        send(newSocket, mssg, strlen(mssg), 0);
+                    }
+                }
+                // handle RETR logic
+                else if (strncmp(buffer, "RETR ", 5) == 0)
+                {
+                    printf("Inside the RETR func");
+                    int k = 0;
+                    char ans[1024];
+                    char temp[1024];
+                    for (int i = 5; i < strlen(buffer); i++)
+                    {
+                        ans[k] = buffer[i];
+                        // printf("Each character: %c\n",ans[k]);
+                        k++;
+                    }
+                    strtok(ans, "\n");
+                    printf("\nfilename to be downloaded to client from server: %s\n", ans);
+                    strcpy(temp, ans);
+
+                    // get file contents from server
+                    int status = retr_file(ans); // passing the filename as an argument
+                    if (status == 0)
+                    {
+                        send(newSocket, temp, MAXLINE, 0); // send the message to client
+                        send(newSocket, file, MAXLINE, 0); // send the file contents
+                        printf(">> File Sent Successfully.\n");
+                    }
+                    else
+                    {
+                        printf("Some error");
+                    }
+                }
 
                 else
                 {
@@ -271,101 +319,43 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-// void split(char *pathname)
-// {
+// write the contents in the file
+int write_file(char *filename, int sockfd)
+{
+    int n;
+    FILE *fp;
+    char buffer[MAXLINE];
+    char clientContent[MAXLINE];
+    printf("file name %s\n", filename);
+    fp = fopen(filename, "w");
+    printf("hello there\n");
+    if (fp == NULL)
+    {
+        perror("[-]Error in creating file.");
+        exit(1);
+    }
+    while (1)
+    {
+        n = recv(sockfd, buffer, MAXLINE, 0);
+        if (n <= 0)
+        {
+            break;
+            return -1;
+        }
+        strcpy(clientContent, buffer);
+        bzero(buffer, sizeof(buffer));
+        printf("\nDisplay the clientContent: %s\n", clientContent);
+        fprintf(fp, "%s", clientContent);
+        fclose(fp);
+        // sleep(1);
 
-//     /*
-//         Objective:      To extract the filename from the pathname
-//         Return Type:    void(null)
-//         Parameter:
-//             char *pathname: specifes pathname from which filename to be extracted.
-//         Approach:       perform using string traversal and delimiting it by '/'
-//     */
-
-//     char splitStrings[10][10];
-//     int i, j, cnt;
-
-//     j = 0;
-//     cnt = 0;
-//     for (i = 0; i <= (strlen(pathname)); i++)
-//     {
-//         if (pathname[i] == '/' || pathname[i] == '\0')
-//         {
-//             splitStrings[cnt][j] = '\0';
-//             cnt++; // for next word
-//             j = 0; // for next word, init index to 0
-//         }
-//         else
-//         {
-//             splitStrings[cnt][j] = pathname[i];
-//             j++;
-//         }
-//     }
-//     strcpy(file_name, splitStrings[cnt - 1]);
-//     file_name[strlen(file_name)] = '\0';
-// }
-
-// int store_file(char *pathname)
-// {
-
-//     /*
-//         Objective:      To store the file sent by client at the server side.
-//         Return Type:    Integer
-//                             return 0:   succesfully stored file at server side.
-//         Parameter:
-//             char *pathname: specifies the path of the file present at client side
-//                             i.e. to be stored at server side.
-//         Approach:       performed by opening the file at client side and storing it
-//                         at the server side(server Directory) by copying the contents.
-//     */
-//     printf("\n PAthname iss %s", pathname);
-//     printf("\nInide the storefile func\n");
-//     char buf[1024];
-//     char res[1024];
-//     printf("\n PAthname is %s", pathname);
-
-//     int socketstatus = recv(newSocket, buf, strlen(buf), 0);
-//     printf("\nSocket Status %d", socketstatus);
-//     if (recv(newSocket, buf, strlen(buf), 0) < 0)
-//     {
-//         // if not receiving
-//         printf("\n socket issue");
-//     }
-//     printf("\n Socket buffer Vakue is %s\n", buf);
-
-//     if (strncmp(buf, "NULL", 4) == 0)
-//     {
-//         printf(">> Invalid File-Name to Store.\n");
-//         return -1;
-//     }
-
-//     strcpy(res, buf);
-//     bzero(buf, sizeof(buf));
-
-//     printf("\nPathanme before splitting %s", pathname);
-//     split(pathname);
-//     strtok(pathname, "\n");
-//     char dest[256];
-//     getcwd(dest, 256);
-//     strcat(dest, "/");
-//     strtok(file_name, "\n");
-//     strcat(dest, file_name);
-//     dest[strlen(dest)] = '\0';
-
-//     FILE *fp1;
-//     fp1 = fopen(dest, "w");
-//     fprintf(fp1, "%s", res);
-//     fclose(fp1);
-
-//     printf("\n-----------------------------------------------------------------------");
-//     // printf("\n>> File Received Successfully by client - %s.", USERNAME[count]);
-//     printf("\n>> File Saved in Path %s", dest);
-//     printf("\n>> File Name: %s", file_name);
-//     printf("\n>> File Size: %ld bytes\n", strlen(res));
-//     printf("-----------------------------------------------------------------------\n");
-
-//     return 0;
-// }
+        printf("\n>> File Name: %s", filename);
+        printf("\n>> File Size: %ld bytes\n", strlen(clientContent));
+        // close(sockfd);
+        return 0;
+    }
+    return 0;
+}
 
 int changeDirectory(char *directory)
 {
@@ -465,3 +455,35 @@ int makeDirectory(char *directory) {
 
     return 338;
 }
+
+// retrieve the file from server to client
+int retr_file(char *filename)
+{
+
+    strtok(filename, "\n");
+
+    char ch;
+    FILE *f;
+
+    if ((f = fopen(filename, "r")) == NULL)
+    {
+        if (errno == ENOENT)
+        {
+            return 347;
+        }
+        return 348;
+    }
+
+    int k = 0;
+    ch = fgetc(f);
+    while (ch != EOF)
+    {
+        file[k] = ch;
+        k++;
+        ch = fgetc(f);
+    }
+    file[k] = '\0';
+
+    return 0;
+}
+

@@ -5,7 +5,9 @@ char file_name[1024];
 int clientSocket;
 char buffer[1024];
 
-// void store_command();
+void send_file();
+void retr_result(char *filename);
+void store_file(char *dest, char file[1024]);
 
 int main(int argc, char *argv[])
 {
@@ -13,6 +15,8 @@ int main(int argc, char *argv[])
 	int clientSocket;
 	int ret, portNumber;
 	char buffer[MAXLINE];
+	char filename[20];
+	FILE *fp;
 	struct sockaddr_in serverAddr; // Server Socket Address Structure
 	if (argc != 2)
 	{
@@ -156,6 +160,44 @@ int main(int argc, char *argv[])
 			bzero(buffer, sizeof(buffer));
 		}
 
+		// hanlde STOR logic
+		else if (strncmp(buf, "STOR ", 5) == 0)
+		{
+			char upload_file[256];
+			strcpy(upload_file, buffer);
+			printf("Message received from server: %s\n", upload_file);
+			bzero(buffer, sizeof(buffer));
+			fp = fopen(upload_file, "r");
+			if (fp == NULL)
+			{
+				perror("[-]Error in reading file.");
+				exit(1);
+			}
+			printf("Successful in opening the file\n");
+			send_file(fp, clientSocket);
+			// printf("[+] File data sent successfully. \n");
+
+			if (recv(clientSocket, buffer, 1024, 0) < 0)
+			{
+				printf("[-]Error in receiving data.\n");
+				exit(1);
+			}
+			printf("Data Returned: \t%s\n", buffer);
+			// printf("Data Returned: File uploaded successfully \t%s\n", buffer);
+			bzero(buffer, sizeof(buffer));
+			// sleep(1);
+		}
+		// hanlde RETR logic
+		else if (strncmp(buf, "RETR ", 5) == 0)
+		{
+			char download_file[256];
+			strcpy(download_file, buffer);
+			printf("File to be downloaded from server: %s\n", download_file);
+			bzero(buffer, sizeof(buffer));
+			retr_result(download_file);
+		}
+
+
 
 
 		/*if(strcmp(buffer,"cdup")==0)
@@ -182,62 +224,57 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-// void store_command()
-// {
+// send contents to server side (upload file contents)
+void send_file(FILE *fp, int clientSocket)
+{
+	char data[MAXLINE] = {0};
 
-// 	char file[1024];
-// 	char ch;
-// 	char ans[1024];
-// 	int k = 0;
+	while (fgets(data, MAXLINE, fp) != NULL)
+	{
+		if (send(clientSocket, data, sizeof(data), 0) == -1)
+		{
+			perror("[-] Error in sending data");
+			exit(1);
+		}
+		bzero(data, MAXLINE);
+	}
+}
 
-// 	/*------------------------------------------------------------------------------------------------------------*/
-// 	printf("\nInside store command\n");
-// 	printf("What is buf value: %s\n", buf);
-// 	for (int i = 5; i < strlen(buf); i++)
-// 	{
-// 		ans[k] = buf[i];
-// 		// printf("Each character: %c\n",ans[k]);
-// 		k++;
-// 	}
-// 	printf("\nAnswer is %s\n", ans);
-// 	strtok(ans, "\n");
-// 	printf("\nfilename is %s\n", ans);
-// 	/*------------------------------------------------------------------------------------------------------------*/
+ // function to store the contents in a file 
+void store_file(char *dest, char file[1024])
+{
 
-// 	FILE *fp;
-// 	if ((fp = fopen(ans, "r")) != NULL)
-// 	{
+	FILE *fp1;
+	fp1 = fopen(dest, "w");
+	fprintf(fp1, "%s", file);
+	fclose(fp1);
+}
+// function to download contents from server side
+void retr_result(char *filename)
+{
+	/*Store File at client-site.*/
+	char res[1024];
+	//bzero(buffer, sizeof(buffer));
 
-// 		k = 0;
-// 		ch = fgetc(fp);
-// 		while (ch != EOF)
-// 		{
-// 			file[k] = ch;
-// 			k++;
-// 			ch = fgetc(fp);
-// 		}
-// 		file[k] = '\0';
-// 		fclose(fp);
+	recv(clientSocket, buffer, MAXLINE, 0);
+	printf("\nContent received from server file: %s\n",buffer);
 
-// 		printf("Source-File-Path : %s\n", ans);
-// 		printf("File-Size        : %ld bytes\n", strlen(file));
+	strcpy(res, buffer);
+	bzero(buffer, sizeof(buffer));
 
-// 		strcpy(buffer, file);
-// 		printf("\n Now the buffer value is %s\n", buffer);
-// 		send(clientSocket, buffer, MAXLINE, 0);
-// 		bzero(buffer, sizeof(buffer));
-// 	}
+	// recv(clientSocket, buffer, MAXLINE, 0);
+	// strcpy(file_name, buffer);
 
-// else
-// {
+	getcwd(buf, 256);
+	strcat(buf, "/");
+	strcat(buf, filename);
+	//bzero(buffer, sizeof(buffer));
+	store_file(buf, res);
 
-// 	if (errno == ENOENT)
-// 	{
-// 		printf("Invalid Filename: File does not exist.\n");
-// 	}
-// 	else
-// 		printf("Error opening file.\n");
-// 	send(clientSocket, "NULL", 4, 0);
-// }
-/*------------------------------------------------------------------------------------------------------------*/
-// }
+	printf("File-Name: %s.\n", filename);
+	printf("File-Size: %ld bytes.\n", strlen(res));
+	printf("Received Successfully.\n");
+	printf("FILE OK...Transfer Completed.");
+	printf("\n");
+}
+
