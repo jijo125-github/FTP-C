@@ -1,0 +1,21 @@
+Your server and your client must communicate using the FTP protocol. You must implement the commands (check the link below for a description of the commands)
+o USER (with no parameter, only to open the connection) 
+o CWD
+o CDUP
+o REIN
+o QUIT
+o PORT (modify it to represent a data transfer named pipe or file instead of port)
+o RETR
+o STOR
+o APPE
+o REST
+o RNFR
+o RNTO
+o ABOR
+o DELE
+o RMD
+o MKD
+o PWD
+o LIST
+o STAT
+o NOOP
