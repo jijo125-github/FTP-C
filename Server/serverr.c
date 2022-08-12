@@ -5,12 +5,14 @@ int count = 0;
 char file_name[100]; // to store contents from client in server
 char pwdbuf[256];
 char list[1024];
+struct stat st = {0};
 
 void split(char *pathaname);
 //int store_file(char *pathname);
 int changeDirectory(char *directory);
 int show_currentDirectory();
 int ListFilesInDirectory();
+int makeDirectory(char *directory);
 
 int main(int argc, char *argv[])
 {
@@ -177,6 +179,34 @@ int main(int argc, char *argv[])
                     {
                         strcpy(buflist,list);
                         send(newSocket,buflist,strlen(buflist),0); // send the listed files to client side
+                    }
+
+                }
+                // handle MKD
+                else if (strncmp(buffer,"MKD",3) == 0)
+                {
+                    printf("Inside MKD func");
+                    int k = 0;
+                    char ans[1024];
+                    for (int i = 4; i < strlen(buffer); i++)
+                    {
+                        ans[k] = buffer[i];
+                        // printf("Each character: %c\n",ans[k]);
+                        k++;
+                    }
+                    strtok(ans, "\n");
+                    int status = makeDirectory(ans); // passing name of the folder to be created as an argument
+                    if (status == 336){
+                        // successfully created
+                        char mssg[256] = "Directory Successfully created --> ";
+                        strcat(mssg,ans);
+                        send(newSocket,mssg,strlen(mssg),0); // send the new directory created message to client
+                        bzero(mssg,strlen(mssg));
+                    }
+                    else if (status == 337){
+                        // already exists
+                        char mssg[256] = "Directory Already Exists, so cannot be created again ";
+                        send(newSocket,mssg,strlen(mssg),0);
                     }
 
                 }
@@ -378,4 +408,35 @@ int ListFilesInDirectory()
         closedir(dp);
     
     return 0;
+}
+
+ // handing logic to make directory
+int makeDirectory(char *directory) {
+
+    /*
+        Objective:      To make a directory when Ftp-client requests 
+                                MKD <path-to-new-directory>
+        Return Type:    Integer
+                            return 336: Directory Created
+                            return 337: Directory already exists
+                            return 338: Directory can't be created
+        Parameter:      
+            char *directory: path of directory to be created
+        Approach:       checking existence of directory using 'stat' function
+                        and creating directory using 'mkdir' 
+
+    */
+
+    strtok(directory, "\n");    // to remove trailing '\n'
+    int status = stat(directory, &st);
+    
+    if (status == -1) {
+        mkdir(directory, 0700);
+        return 336;
+    }
+
+    if (status == 0) 
+        return 337;
+
+    return 338;
 }

@@ -137,6 +137,20 @@ int main(int argc, char *argv[])
 			bzero(buffer, sizeof(buffer));
 			// }
 		}
+		else if (strncmp(buf, "MKD", 3) == 0)
+		{
+			// receive the returned buffer status from server
+			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
+			//  {
+			//  	printf("[-]Error in receiving data.\n");
+			//  }
+			//  else
+			//  {
+			printf("Data Returned: \t%s\n", buffer);
+			bzero(buffer, sizeof(buffer));
+			// }
+		}
+
 
 
 		/*if(strcmp(buffer,"cdup")==0)
