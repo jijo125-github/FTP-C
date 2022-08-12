@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
                             char mssg[256] = "Reply[200]: Command is Okay.\nReply[343]: Remote Working Directory: ";
                             // split(pwdbuf);
                             strcat(mssg, pwdbuf);
-                            printf(mssg);
+                            send(newSocket, mssg, strlen(mssg), 0);
                             // strcpy(buf, mssg);
                             // strcat(buf, "\nCurrent-Working-Directory-Name is : ");
                             // strcat(buf, file_name);
