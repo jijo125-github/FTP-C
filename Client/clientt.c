@@ -4,19 +4,105 @@ char buf[MAXLINE];
 char file_name[1024];
 int clientSocket;
 char buffer[1024];
+char uploadfile[1024];
 
-void send_file();
-void retr_result(char *filename);
-void store_file(char *dest, char file[1024]);
+// function to store the contents in a file
+void store_file(char *dest, char file[1024])
+{
+
+	FILE *fp1;
+	fp1 = fopen(dest, "w");
+	fprintf(fp1, "%s", file);
+	fclose(fp1);
+}
+// function to download contents from server side
+void retr_result(char *filename)
+{
+	/*Store File at client-site.*/
+	char res[1024];
+	// bzero(buffer, sizeof(buffer));
+
+	recv(clientSocket, buffer, MAXLINE, 0);
+	printf("\nContent received from server file: %s\n", buffer);
+
+	strcpy(res, buffer);
+	bzero(buffer, sizeof(buffer));
+
+	// recv(clientSocket, buffer, MAXLINE, 0);
+	// strcpy(file_name, buffer);
+
+	getcwd(buf, 256);
+	strcat(buf, "/");
+	strcat(buf, filename);
+	// bzero(buffer, sizeof(buffer));
+	store_file(buf, res);
+
+	printf("File-Name: %s.\n", filename);
+	printf("File-Size: %ld bytes.\n", strlen(res));
+	printf("Received Successfully.\n");
+	printf("FILE OK...Download Completed.");
+	printf("\n");
+}
+
+// send contents to server side (upload file contents)
+void send_file(FILE *fp, int clientSocket)
+{
+	char data[MAXLINE] = {0};
+
+	while (fgets(data, MAXLINE, fp) != NULL)
+	{
+		if (send(clientSocket, data, sizeof(data), 0) == -1)
+		{
+			perror("[-] Error in sending data");
+			exit(1);
+		}
+	}
+	bzero(data, MAXLINE);
+}
+
+// duplicate method to check (upload file contents)
+int upload_file(char *fileName)
+{
+	strtok(fileName, "\n");
+
+    char ch;
+    FILE *f;
+
+    if ((f = fopen(fileName, "r")) == NULL)
+    {
+        if (errno == ENOENT)
+        {
+            return 347;
+        }
+        return 348;
+    }
+
+    int k = 0;
+    ch = fgetc(f);
+    while (ch != EOF)
+    {
+        uploadfile[k] = ch;
+        k++;
+        ch = fgetc(f);
+    }
+    uploadfile[k] = '\0';
+
+	if (send(clientSocket, uploadfile, sizeof(uploadfile), 0) == -1)
+		{
+			perror("[-] Error in sending data");
+			exit(1);
+		}
+}
 
 int main(int argc, char *argv[])
 {
 
-	int clientSocket;
+	// int clientSocket;
 	int ret, portNumber;
-	char buffer[MAXLINE];
+	// char buffer[MAXLINE];
 	char filename[20];
 	FILE *fp;
+	// char retr_temp[MAXLINE];
 	struct sockaddr_in serverAddr; // Server Socket Address Structure
 	if (argc != 2)
 	{
@@ -60,7 +146,7 @@ int main(int argc, char *argv[])
 		send(clientSocket, buffer, strlen(buffer), 0); // pass input commands to client
 
 		strcpy(buf, buffer);
-		//printf("\n display the buf: %s\n", buf);
+		// printf("\n display the buf: %s\n", buf);
 		buf[strlen(buf)] = '\0';
 		bzero(buffer, sizeof(buffer));
 
@@ -94,65 +180,35 @@ int main(int argc, char *argv[])
 		// handle PWD
 		else if (strncmp(buf, "PWD", 3) == 0)
 		{
-			// receive the returned buffer status from server
-			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
-			//  {
-			//  	printf("[-]Error in receiving data.\n");
-			//  }
-			//  else
-			//  {
+
 			printf("Data Returned: \t%s\n", buffer);
 			bzero(buffer, sizeof(buffer));
 			// }
 		}
 		else if (strncmp(buf, "CWD", 3) == 0)
 		{
-			// receive the returned buffer status from server
-			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
-			//  {
-			//  	printf("[-]Error in receiving data.\n");
-			//  }
-			//  else
-			//  {
+
 			printf("Data Returned: \t%s\n", buffer);
 			bzero(buffer, sizeof(buffer));
 			// }
 		}
 		else if (strncmp(buf, "CDUP", 4) == 0)
 		{
-			// receive the returned buffer status from server
-			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
-			//  {
-			//  	printf("[-]Error in receiving data.\n");
-			//  }
-			//  else
-			//  {
+
 			printf("Data Returned: \t%s\n", buffer);
 			bzero(buffer, sizeof(buffer));
 			// }
 		}
 		else if (strncmp(buf, "LIST", 4) == 0)
 		{
-			// receive the returned buffer status from server
-			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
-			//  {
-			//  	printf("[-]Error in receiving data.\n");
-			//  }
-			//  else
-			//  {
+
 			printf("Data Returned: \t%s\n", buffer);
 			bzero(buffer, sizeof(buffer));
 			// }
 		}
 		else if (strncmp(buf, "MKD", 3) == 0)
 		{
-			// receive the returned buffer status from server
-			//  if (recv(clientSocket, buffer, 1024, 0) < 0)
-			//  {
-			//  	printf("[-]Error in receiving data.\n");
-			//  }
-			//  else
-			//  {
+
 			printf("Data Returned: \t%s\n", buffer);
 			bzero(buffer, sizeof(buffer));
 			// }
@@ -166,18 +222,19 @@ int main(int argc, char *argv[])
 		// hanlde STOR logic
 		else if (strncmp(buf, "STOR ", 5) == 0)
 		{
-			char upload_file[256];
-			strcpy(upload_file, buffer);
-			printf("Message received from server: %s\n", upload_file);
+			char upload_filename[256];
+			strcpy(upload_filename, buffer);
+			printf("Message received from server: %s\n", upload_filename);
 			bzero(buffer, sizeof(buffer));
-			fp = fopen(upload_file, "r");
-			if (fp == NULL)
-			{
-				perror("[-]Error in reading file.");
-				exit(1);
-			}
-			printf("Successful in opening the file\n");
-			send_file(fp, clientSocket);
+			// fp = fopen(upload_filename, "r");
+			// if (fp == NULL)
+			// {
+			// 	perror("[-]Error in reading file.");
+			// 	exit(1);
+			// }
+			// printf("Successful in opening the file\n");
+			//send_file(fp, clientSocket);
+			upload_file(upload_filename);
 			// printf("[+] File data sent successfully. \n");
 
 			if (recv(clientSocket, buffer, 1024, 0) < 0)
@@ -199,60 +256,31 @@ int main(int argc, char *argv[])
 			bzero(buffer, sizeof(buffer));
 			retr_result(download_file);
 		}
+		// handle NOOP logic
+		else if (strncmp(buf, "NOOP", 4) == 0)
+		{
+			printf("server respone: %s", buffer);
+			bzero(buffer, sizeof(buffer));
+		}
+		// handle DELE logic
+		else if (strncmp(buf, "DELE", 4) == 0)
+		{
+			printf("server respone: %s", buffer);
+			bzero(buffer, sizeof(buffer));
+		}
+		// handle ABOr logicx
+		else if (strncmp(buf, "ABOR", 4) == 0)
+		{
+			printf("server response: %s", buffer);
+			bzero(buffer, sizeof(buffer));
+		}
+		// handle REIN
+		else if (strncmp(buf, "REIN", 4) == 0)
+		{
+			printf("waiting for server to re-initialize\n ");
+			printf("server response: %s", buffer);
+			bzero(buffer, sizeof(buffer));
+		}
 	}
 	return 0;
-}
-
-// send contents to server side (upload file contents)
-void send_file(FILE *fp, int clientSocket)
-{
-	char data[MAXLINE] = {0};
-
-	while (fgets(data, MAXLINE, fp) != NULL)
-	{
-		if (send(clientSocket, data, sizeof(data), 0) == -1)
-		{
-			perror("[-] Error in sending data");
-			exit(1);
-		}
-		bzero(data, MAXLINE);
-	}
-}
-
-// function to store the contents in a file
-void store_file(char *dest, char file[1024])
-{
-
-	FILE *fp1;
-	fp1 = fopen(dest, "w");
-	fprintf(fp1, "%s", file);
-	fclose(fp1);
-}
-// function to download contents from server side
-void retr_result(char *filename)
-{
-	/*Store File at client-site.*/
-	char res[1024];
-	// bzero(buffer, sizeof(buffer));
-
-	recv(clientSocket, buffer, MAXLINE, 0);
-	printf("\nContent received from server file: %s\n", buffer);
-
-	strcpy(res, buffer);
-	bzero(buffer, sizeof(buffer));
-
-	// recv(clientSocket, buffer, MAXLINE, 0);
-	// strcpy(file_name, buffer);
-
-	getcwd(buf, 256);
-	strcat(buf, "/");
-	strcat(buf, filename);
-	// bzero(buffer, sizeof(buffer));
-	store_file(buf, res);
-
-	printf("File-Name: %s.\n", filename);
-	printf("File-Size: %ld bytes.\n", strlen(res));
-	printf("Received Successfully.\n");
-	printf("FILE OK...Download Completed.");
-	printf("\n");
 }

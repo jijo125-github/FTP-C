@@ -3,13 +3,13 @@
 int newSocket;
 int count = 0;
 char file[1024]; // to store contents from client in server
-char file_name[100]; 
+char file_name[100];
 char pwdbuf[256];
 char list[1024];
 struct stat st = {0};
 
 void split(char *pathaname);
-//int store_file(char *pathname);
+// int store_file(char *pathname);
 int changeDirectory(char *directory);
 int show_currentDirectory();
 int ListFilesInDirectory();
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
             while (1)
             {
-                //bzero(buffer, sizeof(buffer));
+                // bzero(buffer, sizeof(buffer));
                 recv(newSocket, buffer, 1024, 0); // receiving input commands from client
 
                 // handle QUIT command
@@ -134,10 +134,6 @@ int main(int argc, char *argv[])
                             // split(pwdbuf);
                             strcat(mssg, pwdbuf);
                             send(newSocket, mssg, strlen(mssg), 0);
-                            // strcpy(buf, mssg);
-                            // strcat(buf, "\nCurrent-Working-Directory-Name is : ");
-                            // strcat(buf, file_name);
-                            // return buf;
                         }
                     }
                 }
@@ -159,10 +155,6 @@ int main(int argc, char *argv[])
                             // split(pwdbuf);
                             strcat(mssg, pwdbuf);
                             send(newSocket, mssg, strlen(mssg), 0);
-                            // strcpy(buf, mssg);
-                            // strcat(buf, "\nCurrent-Working-Directory-Name is : ");
-                            // strcat(buf, file_name);
-                            // return buf;
                         }
                     }
                 }
@@ -173,13 +165,12 @@ int main(int argc, char *argv[])
                     int status = ListFilesInDirectory();
                     if (status == 0)
                     {
-                        strcpy(buflist,list);
-                        send(newSocket,buflist,strlen(buflist),0); // send the listed files to client side
+                        strcpy(buflist, list);
+                        send(newSocket, buflist, strlen(buflist), 0); // send the listed files to client side
                     }
-
                 }
                 // handle MKD
-                else if (strncmp(buffer,"MKD",3) == 0)
+                else if (strncmp(buffer, "MKD", 3) == 0)
                 {
                     printf("Inside MKD func");
                     int k = 0;
@@ -192,21 +183,24 @@ int main(int argc, char *argv[])
                     }
                     strtok(ans, "\n");
                     int status = makeDirectory(ans); // passing name of the folder to be created as an argument
-                    if (status == 336){
+                    if (status == 336)
+                    {
                         // successfully created
                         char mssg[256] = "Directory Successfully created --> ";
-                        strcat(mssg,ans);
-                        send(newSocket,mssg,strlen(mssg),0); // send the new directory created message to client
-                        bzero(mssg,strlen(mssg));
+                        strcat(mssg, ans);
+                        send(newSocket, mssg, strlen(mssg), 0); // send the new directory created message to client
+                        bzero(mssg, strlen(mssg));
                     }
-                    else if (status == 337){
+                    else if (status == 337)
+                    {
                         // already exists
                         char mssg[256] = "Directory Already Exists, so cannot be created again ";
-                        send(newSocket,mssg,strlen(mssg),0);
+                        send(newSocket, mssg, strlen(mssg), 0);
                     }
 
-                } // handle RMD function
-                else if (strncmp(buffer,"RMD",3) == 0)
+                } 
+                // handle RMD function
+                else if (strncmp(buffer, "RMD", 3) == 0)
                 {
                     printf("inside RMD func");
                     int k = 0;
@@ -219,17 +213,18 @@ int main(int argc, char *argv[])
                     }
                     strtok(ans, "\n");
                     int status = rmdir(ans);
-                    if (status == 0){
+                    if (status == 0)
+                    {
                         // successfully deleted
                         char mssg[256] = "Directory Successfully deleted ";
-                        send(newSocket,mssg,strlen(mssg),0);
+                        send(newSocket, mssg, strlen(mssg), 0);
                     }
-                    else if (status == 1){
+                    else if (status == 1)
+                    {
                         // not delted somehow
                         char mssg[256] = "Not successful in deleting ";
-                        send(newSocket,mssg,strlen(mssg),0);
+                        send(newSocket, mssg, strlen(mssg), 0);
                     }
-
                 }
                 // handle present working directory logic
                 else if (strncmp(buffer, "PWD ", 4) == 0 || strncmp(buffer, "pwd ", 4) == 0 ||
@@ -239,18 +234,14 @@ int main(int argc, char *argv[])
                     printf("\n Inside PWD logic");
                     int status = show_currentDirectory();
                     if (status == 343)
-                        {
-                            // if current directory status returned successfully
-                            static char buf[256];
-                            char mssg[256] = "Reply[200]: Command is Okay.\nReply[343]: Remote Working Directory: ";
-                            // split(pwdbuf);
-                            strcat(mssg, pwdbuf);
-                            send(newSocket, mssg, strlen(mssg), 0);
-                            // strcpy(buf, mssg);
-                            // strcat(buf, "\nCurrent-Working-Directory-Name is : ");
-                            // strcat(buf, file_name);
-                            // return buf;
-                        }
+                    {
+                        // if current directory status returned successfully
+                        static char buf[256];
+                        char mssg[256] = "Reply[200]: Command is Okay.\nReply[343]: Remote Working Directory: ";
+                        // split(pwdbuf);
+                        strcat(mssg, pwdbuf);
+                        send(newSocket, mssg, strlen(mssg), 0);
+                    }
                 }
                 // handle STOR command
                 else if (strncmp(buffer, "STOR ", 5) == 0)
@@ -307,6 +298,7 @@ int main(int argc, char *argv[])
                     if (status == 0)
                     {
                         send(newSocket, temp, MAXLINE, 0); // send the message to client
+                        printf("\nWhat are the file contents: %s\n",file);
                         send(newSocket, file, MAXLINE, 0); // send the file contents
                         printf(">> File Sent Successfully.\n");
                     }
@@ -314,6 +306,46 @@ int main(int argc, char *argv[])
                     {
                         printf("Some error");
                     }
+                }
+                // give OK respnse to server
+                else if (strncmp(buffer, "NOOP", 4) == 0)
+                {
+                    strcpy(buffer, "OK\n");
+                    send(newSocket, buffer, strlen(buffer), 0);
+                }
+                // delete file from server
+                else if (strncmp(buffer, "DELE ", 5) == 0)
+                {
+                    int k = 0;
+                    char ans[1024];
+                    char temp[1024];
+
+                    for (int i = 5; i < strlen(buffer); i++)
+                    {
+                        ans[k] = buffer[i];
+                        // printf("Each character: %c\n",ans[k]);
+                        k++;
+                    }
+                    strtok(ans, "\n");
+                    // printf("\nfilename is %s\n", ans);
+                    remove(ans);
+                    strcpy(buffer, "File deleted Successfully\n");
+                    send(newSocket, buffer, strlen(buffer), 0);
+                }
+                //handle ABOR
+                else if (strncmp(buffer, "ABOR", 4) == 0)
+                {
+                    strcpy(buffer, "user logged out successfully login again!!\n"); // in future we will be using boolean flag to set the login value to true and false
+                    send(newSocket, buffer, strlen(buffer), 0);
+                }
+                //handle REIN
+                else if (strncmp(buffer, "REIN", 4) == 0)
+                {
+                    printf("reinitialized\n");
+                    strcpy(buffer, "reinitializing server\n");
+                    send(newSocket, buffer, strlen(buffer), 0);
+                    strcpy(buffer, "user logged out successfully!!, login again!!\n"); // in future we will be using boolean flag to set the login value to true and false
+                    send(newSocket, buffer, strlen(buffer), 0);
                 }
 
                 else
@@ -386,7 +418,7 @@ int changeDirectory(char *directory)
 
 int show_currentDirectory()
 {
-    //char pwdbuf[256];
+    // char pwdbuf[256];
     printf("\ninside cirrent direcl logic");
     // display logic for the current directory
     if (getcwd(pwdbuf, 256) == NULL)
@@ -394,74 +426,60 @@ int show_currentDirectory()
         printf("Some issue");
         return 342;
     }
-        
+
     strtok(pwdbuf, "\n");
     printf("\nCurrent Directory >> %s", pwdbuf);
     return 343;
 }
 
 // logic to handle the listing of files in a directory
-int ListFilesInDirectory() 
+int ListFilesInDirectory()
 {
 
-        DIR *dp;
-        struct dirent *DIRP;
-        *list = '\0';
+    DIR *dp;
+    struct dirent *DIRP;
+    *list = '\0';
 
-        // if (strlen(arg) > 1) {
-        //     strtok(arg, "\n");
-        //     if ((directory = opendir(arg)) == NULL)
-        //         return 346;
-        // }
-        // else {
-        //     if((directory = opendir("./")) == NULL) {
-        //         return 346;
-        //     }
-        // }
-        if((dp = opendir("./")) == NULL) {
-                return 346;
-            }
-	
-	    while((DIRP = readdir(dp)) != NULL) {
-            if((strcmp(DIRP->d_name, ".") != 0) && (strcmp(DIRP->d_name, "..") != 0)) {
-                strcat(list, "--> ");
-                strcat(list, DIRP->d_name);
-                strcat(list,"\n");
-            
-            }
+    if ((dp = opendir("./")) == NULL)
+    {
+        return 346;
+    }
+
+    while ((DIRP = readdir(dp)) != NULL)
+    {
+        if ((strcmp(DIRP->d_name, ".") != 0) && (strcmp(DIRP->d_name, "..") != 0))
+        {
+            strcat(list, "--> ");
+            strcat(list, DIRP->d_name);
+            strcat(list, "\n");
         }
+    }
 
-        closedir(dp);
-    
+    closedir(dp);
+
     return 0;
 }
 
- // handing logic to make directory
-int makeDirectory(char *directory) {
+// handing logic to make directory
+int makeDirectory(char *directory)
+{
 
-    /*
-        Objective:      To make a directory when Ftp-client requests 
-                                MKD <path-to-new-directory>
-        Return Type:    Integer
-                            return 336: Directory Created
-                            return 337: Directory already exists
-                            return 338: Directory can't be created
-        Parameter:      
-            char *directory: path of directory to be created
-        Approach:       checking existence of directory using 'stat' function
-                        and creating directory using 'mkdir' 
+    /*  Return Type:    Integer
+                          return 336: Directory Created
+                          return 337: Directory already exists
+                          return 338: Directory can't be created
+*/
 
-    */
-
-    strtok(directory, "\n");    // to remove trailing '\n'
+    strtok(directory, "\n"); // to remove trailing '\n'
     int status = stat(directory, &st);
-    
-    if (status == -1) {
+
+    if (status == -1)
+    {
         mkdir(directory, 0700);
         return 336;
     }
 
-    if (status == 0) 
+    if (status == 0)
         return 337;
 
     return 338;
@@ -497,4 +515,3 @@ int retr_file(char *filename)
 
     return 0;
 }
-
