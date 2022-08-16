@@ -1,6 +1,5 @@
 <h2>Simulating FTP commands in C</h2>
 
---- 
 <p>Run below server-side execution in one terminal</p>
 
 ```bash
